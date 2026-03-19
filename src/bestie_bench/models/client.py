@@ -210,7 +210,19 @@ class AnthropicClient(ModelClient):
             payload["tools"] = _anthropic_tools(tools)
 
         t0 = time.perf_counter()
-        resp = self._client.post("/messages", json=payload)
+        try:
+            resp = self._client.post("/messages", json=payload)
+        except Exception as e:
+            # Debug: print what we tried to send
+            import sys as _sys
+            print(f"DEBUG httpx error: {e}", file=_sys.stderr)
+            print(f"  base_url: {self.base_url}", file=_sys.stderr)
+            print(f"  model: {self.model}", file=_sys.stderr)
+            raise
+        if resp.status_code != 200:
+            import sys as _sys
+            print(f"DEBUG non-200 response: {resp.status_code}", file=_sys.stderr)
+            print(f"  body: {resp.text[:500]}", file=_sys.stderr)
         resp.raise_for_status()
         latency_ms = (time.perf_counter() - t0) * 1000
 
