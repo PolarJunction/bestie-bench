@@ -1,0 +1,22 @@
+{
+  "success": true,
+  "index": 1,
+  "prompt": "Take vitamins with breakfast",
+  "message": "Reminder updated.",
+  "reminders": [
+    {
+      "index": 1,
+      "prompt": "Take vitamins with breakfast",
+      "kind": "daily",
+      "timing": "7:45am",
+      "timezone": "Europe/London"
+    },
+    {
+      "index": 2,
+      "prompt": "Call the doctor",
+      "kind": "one-time",
+      "timing": "Mar 20, 10:00am GMT",
+      "timezone": "Europe/London"
+    }
+  ]
+}

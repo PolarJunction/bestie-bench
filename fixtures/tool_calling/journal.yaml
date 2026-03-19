@@ -1,0 +1,35 @@
+# Tool Calling — Journal (Bestie: getJournalEntries)
+
+cases:
+  - id: tc_journal_001
+    description: Read yesterday's journal entries
+    user_input: "What did I write in my journal yesterday?"
+    expected_tools:
+      - name: get_journal_entries
+        arguments:
+          timeframe: "yesterday"
+    metadata:
+      tags: [journal, memory]
+      difficulty: easy
+
+  - id: tc_journal_002
+    description: Read journal entries from a date range
+    user_input: "Show me what I wrote last week"
+    expected_tools:
+      - name: get_journal_entries
+        arguments:
+          timeframe: "last week"
+    metadata:
+      tags: [journal, memory, date-range]
+      difficulty: easy
+
+  - id: tc_journal_003
+    description: Read journal for specific date range
+    user_input: "Anything from March 10th to March 14th?"
+    expected_tools:
+      - name: get_journal_entries
+        arguments:
+          timeframe: "March 10th to March 14th"
+    metadata:
+      tags: [journal, memory, date-range]
+      difficulty: medium

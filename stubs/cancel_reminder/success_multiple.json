@@ -1,0 +1,21 @@
+{
+  "success": true,
+  "indexes": [
+    1,
+    3
+  ],
+  "message": "2 reminders successfully cancelled.",
+  "prompts": [
+    "Take vitamins",
+    "Submit expense report"
+  ],
+  "reminders": [
+    {
+      "index": 1,
+      "prompt": "Call the doctor",
+      "kind": "one-time",
+      "timing": "Mar 20, 10:00am GMT",
+      "timezone": "Europe/London"
+    }
+  ]
+}

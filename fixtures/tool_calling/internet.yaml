@@ -1,0 +1,35 @@
+# Tool Calling — Internet Search (Bestie: internet_lookup)
+
+cases:
+  - id: tc_internet_001
+    description: Look up current news
+    user_input: "What's the latest news on the AI summit in Geneva?"
+    expected_tools:
+      - name: internet_lookup
+        arguments:
+          query: "AI summit Geneva latest news"
+    metadata:
+      tags: [internet, search, news]
+      difficulty: easy
+
+  - id: tc_internet_002
+    description: Search for a specific fact
+    user_input: "Can you look up how many hours of sleep adults actually need?"
+    expected_tools:
+      - name: internet_lookup
+        arguments:
+          query: "how many hours of sleep do adults need"
+    metadata:
+      tags: [internet, search, health]
+      difficulty: easy
+
+  - id: tc_internet_003
+    description: Search for current event information
+    user_input: "What's happening with the Taylor Swift tour dates this summer?"
+    expected_tools:
+      - name: internet_lookup
+        arguments:
+          query: "Taylor Swift tour dates summer 2026"
+    metadata:
+      tags: [internet, search, entertainment]
+      difficulty: easy

@@ -1,0 +1,19 @@
+{
+  "success": true,
+  "indexes": [
+    2
+  ],
+  "message": "Reminder successfully cancelled.",
+  "prompts": [
+    "Call the doctor"
+  ],
+  "reminders": [
+    {
+      "index": 1,
+      "prompt": "Take vitamins",
+      "kind": "daily",
+      "timing": "7:45am",
+      "timezone": "Europe/London"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "indexes": [
+    99
+  ],
+  "message": "No active reminders found. It may have already been cancelled.",
+  "prompts": [],
+  "reminders": [
+    {
+      "index": 1,
+      "prompt": "Take vitamins",
+      "kind": "daily",
+      "timing": "7:45am",
+      "timezone": "Europe/London"
+    }
+  ]
+}

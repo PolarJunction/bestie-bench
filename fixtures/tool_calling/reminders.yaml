@@ -1,42 +1,106 @@
-# Tool Calling — Reminders
+# Tool Calling — Reminders (Bestie: schedule_event, get_reminders, update_reminder, cancel_reminder)
 
 cases:
-  - id: tc_reminder_001
-    description: Schedule a simple reminder for a specific time and day
-    user_input: "Remind me to call mum at 9am on Tuesday"
+  - id: tc_reminder_schedule_001
+    description: Schedule a one-time reminder with natural language
+    user_input: "Remind me to call my mum tomorrow at 2pm"
     expected_tools:
-      - name: schedule_reminder
+      - name: schedule_event
         arguments:
-          time: "09:00"
-          day: "tuesday"
-          message: "Call mum"
+          when: "tomorrow at 2pm"
+          prompt: "Remind the user to call their mum"
     metadata:
-      tags: [reminder, scheduling]
+      tags: [reminder, scheduling, one-time]
       difficulty: easy
 
-  - id: tc_reminder_002
-    description: Schedule a daily recurring reminder
-    user_input: "I need a daily reminder at 7am to take my medication"
+  - id: tc_reminder_schedule_002
+    description: Schedule a recurring daily reminder
+    user_input: "I need a daily reminder at 7:45am to take my vitamins"
     expected_tools:
-      - name: schedule_reminder
+      - name: schedule_event
         arguments:
-          time: "07:00"
-          day: "daily"
-          message: "Take your medication"
-          repeat: "daily"
+          when: "every day at 7:45am"
+          prompt: "Remind the user to take their vitamins"
     metadata:
-      tags: [reminder, scheduling, daily]
+      tags: [reminder, scheduling, recurring, daily]
+      difficulty: medium
+
+  - id: tc_reminder_schedule_003
+    description: Schedule a reminder with relative time
+    user_input: "Can you remind me in 30 minutes to start dinner?"
+    expected_tools:
+      - name: schedule_event
+        arguments:
+          when: "in 30 minutes"
+          prompt: "Remind the user to start dinner"
+    metadata:
+      tags: [reminder, scheduling, relative-time]
       difficulty: easy
 
-  - id: tc_reminder_003
-    description: Schedule a reminder for today with short notice
-    user_input: "Quick reminder - meeting with the team in 30 minutes"
+  - id: tc_reminder_schedule_004
+    description: Schedule a reminder for a specific day of week
+    user_input: "Remind me every Thursday evening to check in on how my week's going"
     expected_tools:
-      - name: schedule_reminder
+      - name: schedule_event
         arguments:
-          time: "30 minutes"
-          day: "today"
-          message: "Meeting with the team"
+          when: "every Thursday evening"
+          prompt: "Remind the user to check in on how their week's going"
     metadata:
-      tags: [reminder, scheduling]
+      tags: [reminder, scheduling, weekly]
+      difficulty: medium
+
+  - id: tc_reminder_get_001
+    description: List all active reminders
+    user_input: "What reminders do I have set right now?"
+    expected_tools:
+      - name: get_reminders
+        arguments: {}
+    metadata:
+      tags: [reminder, listing]
+      difficulty: easy
+
+  - id: tc_reminder_cancel_001
+    description: Cancel a specific reminder by index
+    user_input: "Actually cancel reminder number 2"
+    expected_tools:
+      - name: cancel_reminder
+        arguments:
+          indexes: [2]
+    metadata:
+      tags: [reminder, cancellation]
+      difficulty: easy
+
+  - id: tc_reminder_cancel_002
+    description: Cancel multiple reminders at once
+    user_input: "Cancel reminders 1 and 3 please"
+    expected_tools:
+      - name: cancel_reminder
+        arguments:
+          indexes: [1, 3]
+    metadata:
+      tags: [reminder, cancellation, multiple]
+      difficulty: easy
+
+  - id: tc_reminder_update_001
+    description: Update the time of an existing reminder
+    user_input: "Change reminder 1 to tomorrow at 10am instead"
+    expected_tools:
+      - name: update_reminder
+        arguments:
+          index: 1
+          when: "tomorrow at 10am"
+    metadata:
+      tags: [reminder, update]
+      difficulty: medium
+
+  - id: tc_reminder_update_002
+    description: Update the message of an existing reminder
+    user_input: "Update reminder 2 to say 'call the doctor' instead"
+    expected_tools:
+      - name: update_reminder
+        arguments:
+          index: 2
+          prompt: "Remind the user to call the doctor"
+    metadata:
+      tags: [reminder, update, message]
       difficulty: medium

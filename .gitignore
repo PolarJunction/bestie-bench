@@ -10,8 +10,10 @@ dist/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-results/*.json
-!.gitkeep
 .env
 .venv/
 venv/
+
+# Benchmark artifacts
+results/*.json
+!results/.gitkeep

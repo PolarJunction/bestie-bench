@@ -2,13 +2,13 @@
 
 Usage:
     bestie-bench run --provider openai --model gpt-4o --fixtures fixtures
+    bestie-bench install-stubs
     bestie-bench report --results-dir results
     bestie-bench compare --results-dir results
 """
 
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 
@@ -16,7 +16,7 @@ import click
 from rich.console import Console
 
 from bestie_bench import Harness, make_client, Axis
-from bestie_bench.harness import SYSTEM_PROMPTS
+from bestie_bench.harness import SYSTEM_PROMPTS, HarnessConfig
 from bestie_bench.reporters import (
     print_benchmark_result,
     compare_results,
@@ -62,6 +62,12 @@ def cli() -> None:
     help="Directory containing fixture YAML files",
 )
 @click.option(
+    "--stubs-dir",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Directory containing stub JSON files (enables stubbing)",
+)
+@click.option(
     "--results-dir",
     type=click.Path(path_type=Path),
     default="results",
@@ -91,6 +97,12 @@ def cli() -> None:
     help="Model to use for LLM-judge scoring",
 )
 @click.option(
+    "--max-agent-turns",
+    default=10,
+    type=int,
+    help="Max agent loop turns per tool-calling case",
+)
+@click.option(
     "--axes",
     multiple=True,
     type=click.Choice(["tool_calling", "advice", "empathy"]),
@@ -103,15 +115,18 @@ def run(
     base_url: str | None,
     api_key: str | None,
     fixtures_dir: Path,
+    stubs_dir: Path | None,
     results_dir: Path,
     system_prompt: str,
     runs_per_case: int,
     temperature: float,
     judge_model: str,
+    max_agent_turns: int,
     axes: tuple[str, ...],
     verbose: bool,
 ) -> None:
     """Run the benchmark."""
+    # Build model client
     kwargs: dict = {"model": model}
     if base_url:
         kwargs["base_url"] = base_url
@@ -124,10 +139,30 @@ def run(
         console.print(f"[red]Failed to create client: {exc}[/red]")
         sys.exit(1)
 
+    # Build stub registry
+    stub_registry = None
+    if stubs_dir:
+        try:
+            from bestie_bench.stubs.registry import StubRegistry
+            stub_registry = StubRegistry(stubs_dir=stubs_dir)
+            console.print(f"[dim]Stubbing enabled from: {stubs_dir}[/dim]")
+        except ImportError:
+            console.print("[yellow]Stubbing requested but stubs module not available[/yellow]")
+
     harness = Harness(
         client=client,
         fixtures_dir=fixtures_dir,
         results_dir=results_dir,
+        stub_registry=stub_registry,
+    )
+
+    config = HarnessConfig(
+        system_prompt_name=system_prompt,
+        runs_per_case=runs_per_case,
+        temperature=temperature,
+        judge_model=judge_model,
+        max_agent_turns=max_agent_turns,
+        stub_registry=stub_registry,
     )
 
     axis_list = [Axis(a) for a in axes] if axes else None
@@ -139,19 +174,45 @@ def run(
     console.print(f"  Temperature: {temperature}")
     console.print(f"  Judge model: {judge_model}")
     console.print(f"  Fixtures: {fixtures_dir}")
+    if stubs_dir:
+        console.print(f"  Stubs: {stubs_dir}")
     console.print()
 
-    result = harness.run(
-        system_prompt_name=system_prompt,
-        runs_per_case=runs_per_case,
-        temperature=temperature,
-        judge_model=judge_model,
-        axes=axis_list,
-        verbose=verbose,
-    )
+    result = harness.run(config=config, axes=axis_list, verbose=verbose)
 
     console.print()
     print_benchmark_result(result)
+
+
+@cli.command()
+@click.option(
+    "--stubs-dir",
+    type=click.Path(path_type=Path),
+    default="stubs",
+    help="Directory to install stub files to",
+)
+@click.option(
+    "--force",
+    is_flag=True,
+    help="Overwrite existing stub files",
+)
+def install_stubs(stubs_dir: Path, force: bool) -> None:
+    """Install default stub files to a directory for customization.
+
+    Run this once to populate stubs/ with JSON files for each tool.
+    Edit the files to change the stubbed responses.
+    """
+    try:
+        from bestie_bench.stubs.registry import install_stubs as _install
+    except ImportError as exc:
+        console.print(f"[red]Stubs module not available: {exc}[/red]")
+        sys.exit(1)
+
+    console.print(f"Installing stubs to [cyan]{stubs_dir}[/cyan]...")
+    _install(stubs_dir, force=force)
+    console.print("\n[green]Done.[/green] Stub files installed:")
+    console.print("  Edit any .json file to change the stubbed response.")
+    console.print("  Run with [cyan]--stubs-dir stubs[/cyan] to use them.")
 
 
 @cli.command()
@@ -215,7 +276,7 @@ def prompts() -> None:
     """List available system prompts."""
     console.print("[bold cyan]Available system prompts:[/bold cyan]\n")
     for name, prompt in SYSTEM_PROMPTS.items():
-        short = prompt[:80] + "..." if len(prompt) > 80 else prompt
+        short = prompt[:100] + "..." if len(prompt) > 100 else prompt
         console.print(f"  [green]{name}[/green]")
         console.print(f"    {short}\n")
 

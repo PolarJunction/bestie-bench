@@ -1,8 +1,8 @@
-# Tool Calling — Weather
+# Tool Calling — Weather (Bestie: get_weather)
 
 cases:
   - id: tc_weather_001
-    description: Get weather for a city
+    description: Get weather for a city explicitly named
     user_input: "What's the weather like in Edinburgh today?"
     expected_tools:
       - name: get_weather
@@ -13,13 +13,22 @@ cases:
       difficulty: easy
 
   - id: tc_weather_002
-    description: Get weather with specific units
+    description: Get weather with US units requested
     user_input: "Is it cold in New York right now? Give me it in Fahrenheit."
     expected_tools:
       - name: get_weather
         arguments:
           location: "New York"
-          units: "imperial"
     metadata:
-      tags: [weather]
+      tags: [weather, temperature]
+      difficulty: easy
+
+  - id: tc_weather_003
+    description: Weather check with no explicit location (should infer)
+    user_input: "Do I need a jacket today?"
+    expected_tools:
+      - name: get_weather
+        arguments: {}
+    metadata:
+      tags: [weather, contextual]
       difficulty: medium

@@ -1,6 +1,6 @@
 # bestie-bench
 
-Benchmarking harness for the Bestie AI agent — evaluating **tool calling**, **advice quality**, and **empathy**.
+Benchmarking harness for the **Bestie** AI agent — evaluating **tool calling**, **advice quality**, and **empathy**.
 
 Built on [DeepEval](https://github.com/confident-ai/deepeval) with a model-agnostic design. Swap in any OpenAI- or Anthropic-compatible model.
 
@@ -10,81 +10,114 @@ Built on [DeepEval](https://github.com/confident-ai/deepeval) with a model-agnos
 # Install
 pip install -e .
 
-# Set API key
-export OPENAI_API_KEY=sk-...
+# Install default stubs (optional — enables fast, reproducible runs)
+bestie-bench install-stubs
 
-# Run benchmark
-bestie-bench run --provider openai --model gpt-4o --runs-per-case 3
+# Run with stubs
+bestie-bench run --provider openai --model gpt-4o --stubs-dir stubs --runs-per-case 3
 
-# View latest result
+# View results
 bestie-bench report
-
-# Compare runs
 bestie-bench compare --limit 5
+```
+
+## Tool Calling — Bestie's Real Tools
+
+Bestie uses 7 real tools (mirrored from `apps/web/app/api/chat/tools.ts`):
+
+| Tool | Description |
+|------|-------------|
+| `get_weather` | Current weather by location |
+| `get_journal_entries` | Read recent journal entries |
+| `internet_lookup` | Web search via Tavily |
+| `schedule_event` | Create a reminder |
+| `get_reminders` | List active reminders |
+| `update_reminder` | Edit an existing reminder |
+| `cancel_reminder` | Cancel one or more reminders |
+
+## Stubbing
+
+Stubs intercept tool calls and return pre-recorded responses. This makes runs:
+- **Fast** — no external API calls
+- **Reproducible** — same inputs, same outputs every time
+- **Deterministic** — no flaky weather or search APIs
+
+```bash
+# Install default stubs to stubs/ directory
+bestie-bench install-stubs
+
+# Edit stubs (optional — customize responses)
+vim stubs/get_weather/London.json
+
+# Run with stubs
+bestie-bench run --stubs-dir stubs --verbose
+```
+
+Stubs are JSON files at `stubs/<tool_name>/<stub_key>.json`:
+```json
+{
+  "condition": "Overcast",
+  "feelsLike": "11°C",
+  "humidity": "80%",
+  "location": "London, England",
+  "temperature": "13°C",
+  "wind": "18 km/h"
+}
+```
+
+## Test Fixtures
+
+Fixtures are YAML files in `fixtures/<axis>/`:
+
+```bash
+fixtures/tool_calling/reminders.yaml   # schedule/get/update/cancel reminders
+fixtures/tool_calling/weather.yaml     # get_weather
+fixtures/tool_calling/journal.yaml      # get_journal_entries
+fixtures/tool_calling/internet.yaml     # internet_lookup
+fixtures/advice/productivity.yaml       # advice quality
+fixtures/empathy/relationships.yaml     # empathy + emotional intelligence
+fixtures/empathy/milestones.yaml       # empathy in life transitions
 ```
 
 ## Architecture
 
 ```
 bestie-bench/
-├── fixtures/           # Test cases (YAML)
-│   ├── tool_calling/   # Expected tool calls
-│   ├── advice/         # Advice quality rubrics
-│   └── empathy/        # Empathy rubrics
+├── fixtures/                   # Test cases (YAML)
+│   ├── tool_calling/          # 16 cases covering all 7 Bestie tools
+│   ├── advice/
+│   └── empathy/
+├── stubs/                      # Pre-recorded tool responses (optional)
+│   ├── get_weather/           # Stub files per tool
+│   ├── schedule_event/
+│   └── ...
 ├── src/bestie_bench/
-│   ├── harness.py      # Core eval runner
-│   ├── cases/          # TestCase models + loader
-│   ├── metrics/        # DeepEval metric wrappers
-│   ├── models/         # Unified model client
-│   └── reporters/      # Result output
-└── results/            # JSON outputs
+│   ├── harness.py              # Core eval runner + agent loop
+│   ├── stubs/registry.py       # StubRegistry + install_stubs()
+│   ├── cases/                 # TestCase models + YAML loader
+│   ├── metrics/               # DeepEval wrappers per axis
+│   ├── models/                # Unified model client
+│   └── reporters/              # Rich tables + JSON output
+└── results/                    # JSON outputs per run
 ```
 
-## Defining Test Cases
+## CLI Reference
 
-Fixtures are YAML files in `fixtures/<axis>/`:
-
-```yaml
-# fixtures/tool_calling/reminders.yaml
-- id: tc_reminder_001
-  description: Schedule a reminder for 9am Tuesday
-  user_input: "Remind me to call mum at 9am on Tuesday"
-  expected_tools:
-    - name: schedule_reminder
-      arguments:
-        time: "09:00"
-        day: "tuesday"
-        message: "Call mum"
-
----
-# fixtures/empathy/relationships.yaml
-- id: emp_rel_001
-  description: User received bad news from a friend
-  user_input: "My best friend just told me she's moving to Australia..."
-  evaluation_criteria: |
-    Evaluate empathy quality:
-    1. Does it acknowledge the mixed feelings?
-    2. Is the tone warm and natural?
-    ...
-```
-
-## Adding New Axes
-
-1. Create `fixtures/<new_axis>/cases.yaml`
-2. Define `evaluation_criteria` (for LLM-judge) or `expected_tools` (for deterministic)
-3. Add axis to `harness.py` if it needs special handling
-4. Run with `--axes <new_axis>`
-
-## System Prompts
-
-List available prompts:
 ```bash
+# Run benchmark
+bestie-bench run [options]
+
+# Install/edit stubs
+bestie-bench install-stubs [--stubs-dir stubs] [--force]
+
+# View results
+bestie-bench report [--results-dir results]
+
+# Compare runs
+bestie-bench compare [--results-dir results] [--limit 10]
+
+# List system prompts
 bestie-bench prompts
-```
-
-Override in a run:
-```bash
-bestie-bench run --system-prompt bestie-advisor ...
 ```
 
 ## Scoring
@@ -95,8 +128,4 @@ bestie-bench run --system-prompt bestie-advisor ...
 | Advice | `GEval` with custom rubric | LLM-as-judge (GPT-4o by default) |
 | Empathy | `GEval` with custom rubric | LLM-as-judge |
 
-Scores are 0–1. Default pass threshold: 0.5.
-
-## Results
-
-Results are saved as JSON to `results/run-*.json`. Use `bestie-bench report` to print a formatted summary, or `bestie-bench compare` to compare multiple runs.
+Each tool call test case runs the full **agent loop**: model → tool calls → stubbed responses → model → final text.

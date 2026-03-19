@@ -1,0 +1,26 @@
+{
+  "reminders": [
+    {
+      "index": 1,
+      "prompt": "Take vitamins",
+      "kind": "daily",
+      "timing": "7:45am",
+      "timezone": "Europe/London"
+    },
+    {
+      "index": 2,
+      "prompt": "Call the doctor",
+      "kind": "one-time",
+      "timing": "Mar 20, 10:00am GMT",
+      "timezone": "Europe/London"
+    },
+    {
+      "index": 3,
+      "prompt": "Submit expense report",
+      "kind": "one-time",
+      "timing": "Mar 22, 3:00pm GMT",
+      "timezone": "Europe/London"
+    }
+  ],
+  "message": "You have 3 active reminder(s)."
+}
