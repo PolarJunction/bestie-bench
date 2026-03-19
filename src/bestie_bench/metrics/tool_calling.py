@@ -123,4 +123,4 @@ def evaluate_tool_case(
 
 
 # DeepEval imports
-from deepeval.metrics import ToolCallParams  # noqa: E402
+from deepeval.test_case.llm_test_case import ToolCallParams  # noqa: E402

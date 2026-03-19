@@ -159,11 +159,12 @@ class AnthropicClient(ModelClient):
         self,
         api_key: str | None = None,
         model: str = "claude-3-5-sonnet-20241022",
+        base_url: str = "https://api.anthropic.com/v1",
         timeout: float = 60.0,
     ):
         self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY", "")
         self.model = model
-        self.base_url = "https://api.anthropic.com/v1"
+        self.base_url = base_url
         self.timeout = timeout
         self._client = httpx.Client(
             base_url=self.base_url,
@@ -266,7 +267,7 @@ def make_client(provider: str, model: str, **kwargs: Any) -> ModelClient:
             # MiniMax uses Anthropic Messages API at a custom endpoint
             return AnthropicClient(
                 model=model,
-                base_url="https://api.minimax.io/anthropic",
+                base_url="https://api.minimax.io/anthropic/v1",
                 **kwargs,
             )
         case _:
