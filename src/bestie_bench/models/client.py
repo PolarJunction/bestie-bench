@@ -214,25 +214,30 @@ class AnthropicClient(ModelClient):
         latency_ms = (time.perf_counter() - t0) * 1000
 
         data = resp.json()
-        content = data["content"][0] if data["content"] else ""
 
-        # Handle text blocks
-        if hasattr(content, "type"):
-            text = content.text if content.type == "text" else ""
-        else:
-            text = str(content)
+        # Extract text (skip thinking blocks) and tool calls
+        text_parts: list[str] = []
+        tool_calls: list[ToolCallResult] = []
 
-        # Handle tool use blocks
-        tool_calls = []
         for block in data.get("content", []):
-            if hasattr(block, "type") and block.type == "tool_use":
+            # blocks are dicts when parsed from JSON
+            block_type = block.get("type") if isinstance(block, dict) else None
+
+            if block_type == "text":
+                text_parts.append(block.get("text", ""))
+
+            elif block_type == "tool_use":
                 tool_calls.append(
                     ToolCallResult(
-                        id=block.id,
-                        name=block.name,
-                        arguments=parse_json_args(block.input),
+                        id=block.get("id"),
+                        name=block["name"],
+                        arguments=parse_json_args(block.get("input", {})),
                     )
                 )
+
+            # Skip thinking blocks — they're for reasoning, not final output
+
+        text = " ".join(text_parts)
 
         return ModelResponse(
             content=text,
@@ -257,8 +262,15 @@ def make_client(provider: str, model: str, **kwargs: Any) -> ModelClient:
             return OpenAIClient(model=model, **kwargs)
         case "anthropic":
             return AnthropicClient(model=model, **kwargs)
+        case "minimax":
+            # MiniMax uses Anthropic Messages API at a custom endpoint
+            return AnthropicClient(
+                model=model,
+                base_url="https://api.minimax.io/anthropic",
+                **kwargs,
+            )
         case _:
-            msg = f"Unknown provider: {provider}. Supported: openai, anthropic"
+            msg = f"Unknown provider: {provider}. Supported: openai, anthropic, minimax"
             raise ValueError(msg)
 
 

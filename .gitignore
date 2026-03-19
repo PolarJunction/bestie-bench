@@ -17,3 +17,6 @@ venv/
 # Benchmark artifacts
 results/*.json
 !results/.gitkeep
+
+# Local config with secrets
+bestie-bench.toml

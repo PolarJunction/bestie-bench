@@ -1,14 +1,15 @@
 """CLI for bestie-bench.
 
 Usage:
-    bestie-bench run --provider openai --model gpt-4o --fixtures fixtures
+    bestie-bench run                          # uses bestie-bench.toml if present
+    bestie-bench run --provider openai --model gpt-4o
     bestie-bench install-stubs
     bestie-bench report --results-dir results
-    bestie-bench compare --results-dir results
 """
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -17,14 +18,63 @@ from rich.console import Console
 
 from bestie_bench import Harness, make_client, Axis
 from bestie_bench.harness import SYSTEM_PROMPTS, HarnessConfig
-from bestie_bench.reporters import (
-    print_benchmark_result,
-    compare_results,
-    iter_results,
-    load_result,
-)
 
 console = Console()
+
+
+# ---------------------------------------------------------------------------
+# Config file loading
+# ---------------------------------------------------------------------------
+
+try:
+    import tomllib
+    HAVE_TOMLLIB = True
+except ImportError:
+    import tomli as tomllib  # type: ignore
+    HAVE_TOMLLIB = False
+
+
+def load_config(config_path: Path | None = None) -> dict:
+    """Load config from TOML file.
+
+    Searches for bestie-bench.toml in:
+    1. Explicit path via --config
+    2. Current directory
+    3. User's home directory
+    """
+    if config_path and config_path.exists():
+        with open(config_path, "rb") as f:
+            return tomllib.load(f)
+
+    search_paths = [
+        Path("bestie-bench.toml"),
+        Path.home() / ".config" / "bestie-bench.toml",
+    ]
+
+    for path in search_paths:
+        if path.exists():
+            with open(path, "rb") as f:
+                return tomllib.load(f)
+
+    return {}
+
+
+def config_val(config: dict, *keys: str, default=None):
+    """Get a nested config value."""
+    val = config
+    for k in keys:
+        if isinstance(val, dict):
+            val = val.get(k)
+        else:
+            return default
+        if val is None:
+            return default
+    return val
+
+
+# ---------------------------------------------------------------------------
+# CLI group
+# ---------------------------------------------------------------------------
 
 
 @click.group()
@@ -33,17 +83,22 @@ def cli() -> None:
     pass
 
 
+# ---------------------------------------------------------------------------
+# run command
+# ---------------------------------------------------------------------------
+
+
 @cli.command()
 @click.option(
     "--provider",
-    type=click.Choice(["openai", "anthropic", "openai-compatible"]),
-    default="openai",
-    help="Model provider",
+    type=click.Choice(["openai", "anthropic", "minimax", "openai-compatible"]),
+    default=None,
+    help="Model provider (overrides config file)",
 )
 @click.option(
     "--model",
-    default="gpt-4o",
-    help="Model name",
+    default=None,
+    help="Model name (overrides config file)",
 )
 @click.option(
     "--base-url",
@@ -53,12 +108,18 @@ def cli() -> None:
 @click.option(
     "--api-key",
     default=None,
-    help="API key (or set OPENAI_API_KEY / ANTHROPIC_API_KEY env var)",
+    help="API key (overrides BESTIE_BENCH_API_KEY env var and config file)",
+)
+@click.option(
+    "--config",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Path to bestie-bench.toml config file",
 )
 @click.option(
     "--fixtures-dir",
     type=click.Path(path_type=Path),
-    default="fixtures",
+    default=None,
     help="Directory containing fixture YAML files",
 )
 @click.option(
@@ -70,35 +131,35 @@ def cli() -> None:
 @click.option(
     "--results-dir",
     type=click.Path(path_type=Path),
-    default="results",
+    default=None,
     help="Directory to write results JSON",
 )
 @click.option(
     "--system-prompt",
-    default="bestie-v1",
+    default=None,
     type=click.Choice(list(SYSTEM_PROMPTS.keys())),
     help="System prompt to use",
 )
 @click.option(
     "--runs-per-case",
-    default=3,
+    default=None,
     type=int,
     help="Number of runs per test case",
 )
 @click.option(
     "--temperature",
-    default=0.7,
+    default=None,
     type=float,
     help="Sampling temperature",
 )
 @click.option(
     "--judge-model",
-    default="gpt-4o",
+    default=None,
     help="Model to use for LLM-judge scoring",
 )
 @click.option(
     "--max-agent-turns",
-    default=10,
+    default=None,
     type=int,
     help="Max agent loop turns per tool-calling case",
 )
@@ -110,28 +171,56 @@ def cli() -> None:
 )
 @click.option("--verbose", is_flag=True, help="Print progress")
 def run(
-    provider: str,
-    model: str,
+    provider: str | None,
+    model: str | None,
     base_url: str | None,
     api_key: str | None,
-    fixtures_dir: Path,
+    config: Path | None,
+    fixtures_dir: Path | None,
     stubs_dir: Path | None,
-    results_dir: Path,
-    system_prompt: str,
-    runs_per_case: int,
-    temperature: float,
-    judge_model: str,
-    max_agent_turns: int,
+    results_dir: Path | None,
+    system_prompt: str | None,
+    runs_per_case: int | None,
+    temperature: float | None,
+    judge_model: str | None,
+    max_agent_turns: int | None,
     axes: tuple[str, ...],
     verbose: bool,
 ) -> None:
-    """Run the benchmark."""
+    """Run the benchmark.
+
+    If bestie-bench.toml exists in the current directory, values from it
+    are used as defaults. CLI flags always override config file values.
+    """
+    cfg = load_config(config)
+
+    # Resolve values: CLI flag > env var > config file
+    provider = provider or os.environ.get("BESTIE_BENCH_PROVIDER") or config_val(cfg, "default", "provider")
+    model = model or os.environ.get("BESTIE_BENCH_MODEL") or config_val(cfg, "default", "model")
+    api_key = api_key or os.environ.get("BESTIE_BENCH_API_KEY") or config_val(cfg, "default", "api_key")
+    judge_model = judge_model or os.environ.get("BESTIE_BENCH_JUDGE_MODEL") or config_val(cfg, "default", "judge_model")
+    temperature = temperature if temperature is not None else float(os.environ.get("BESTIE_BENCH_TEMPERATURE") or config_val(cfg, "default", "temperature", default=0.7))
+    runs_per_case = runs_per_case if runs_per_case is not None else int(os.environ.get("BESTIE_BENCH_RUNS_PER_CASE") or config_val(cfg, "default", "runs_per_case", default=3))
+    fixtures_dir = fixtures_dir or Path(os.environ.get("BESTIE_BENCH_FIXTURES_DIR") or config_val(cfg, "default", "fixtures_dir", default="fixtures"))
+    stubs_dir_cfg = os.environ.get("BESTIE_BENCH_STUBS_DIR") or config_val(cfg, "default", "stubs_dir")
+    stubs_dir = stubs_dir or (Path(stubs_dir_cfg) if stubs_dir_cfg else None)
+    results_dir = results_dir or Path(os.environ.get("BESTIE_BENCH_RESULTS_DIR") or config_val(cfg, "default", "results_dir", default="results"))
+    system_prompt = system_prompt or os.environ.get("BESTIE_BENCH_SYSTEM_PROMPT") or config_val(cfg, "default", "system_prompt", default="bestie-v1")
+    judge_model = judge_model or config_val(cfg, "default", "judge_model", default="gpt-4o")
+    max_agent_turns = max_agent_turns if max_agent_turns is not None else int(os.environ.get("BESTIE_BENCH_MAX_AGENT_TURNS") or config_val(cfg, "default", "max_agent_turns", default=10))
+
+    if not provider or not model:
+        console.print("[red]--provider and --model are required (or set in bestie-bench.toml)[/red]")
+        sys.exit(1)
+
+    if not api_key:
+        console.print("[red]API key not set. Set BESTIE_BENCH_API_KEY env var, or api_key in bestie-bench.toml[/red]")
+        sys.exit(1)
+
     # Build model client
-    kwargs: dict = {"model": model}
+    kwargs: dict = {"model": model, "api_key": api_key}
     if base_url:
         kwargs["base_url"] = base_url
-    if api_key:
-        kwargs["api_key"] = api_key
 
     try:
         client = make_client(provider, **kwargs)
@@ -141,13 +230,13 @@ def run(
 
     # Build stub registry
     stub_registry = None
-    if stubs_dir:
+    if stubs_dir and stubs_dir.exists():
         try:
             from bestie_bench.stubs.registry import StubRegistry
             stub_registry = StubRegistry(stubs_dir=stubs_dir)
             console.print(f"[dim]Stubbing enabled from: {stubs_dir}[/dim]")
         except ImportError:
-            console.print("[yellow]Stubbing requested but stubs module not available[/yellow]")
+            console.print("[yellow]Stubs requested but module not available[/yellow]")
 
     harness = Harness(
         client=client,
@@ -156,7 +245,7 @@ def run(
         stub_registry=stub_registry,
     )
 
-    config = HarnessConfig(
+    cfg_harness = HarnessConfig(
         system_prompt_name=system_prompt,
         runs_per_case=runs_per_case,
         temperature=temperature,
@@ -178,10 +267,16 @@ def run(
         console.print(f"  Stubs: {stubs_dir}")
     console.print()
 
-    result = harness.run(config=config, axes=axis_list, verbose=verbose)
+    from bestie_bench.reporters import print_benchmark_result
 
+    result = harness.run(config=cfg_harness, axes=axis_list, verbose=verbose)
     console.print()
     print_benchmark_result(result)
+
+
+# ---------------------------------------------------------------------------
+# install-stubs command
+# ---------------------------------------------------------------------------
 
 
 @cli.command()
@@ -191,17 +286,9 @@ def run(
     default="stubs",
     help="Directory to install stub files to",
 )
-@click.option(
-    "--force",
-    is_flag=True,
-    help="Overwrite existing stub files",
-)
+@click.option("--force", is_flag=True, help="Overwrite existing stub files")
 def install_stubs(stubs_dir: Path, force: bool) -> None:
-    """Install default stub files to a directory for customization.
-
-    Run this once to populate stubs/ with JSON files for each tool.
-    Edit the files to change the stubbed responses.
-    """
+    """Install default stub files to a directory for customization."""
     try:
         from bestie_bench.stubs.registry import install_stubs as _install
     except ImportError as exc:
@@ -210,9 +297,14 @@ def install_stubs(stubs_dir: Path, force: bool) -> None:
 
     console.print(f"Installing stubs to [cyan]{stubs_dir}[/cyan]...")
     _install(stubs_dir, force=force)
-    console.print("\n[green]Done.[/green] Stub files installed:")
+    console.print("\n[green]Done.[/green] Stub files installed.")
     console.print("  Edit any .json file to change the stubbed response.")
     console.print("  Run with [cyan]--stubs-dir stubs[/cyan] to use them.")
+
+
+# ---------------------------------------------------------------------------
+# report command
+# ---------------------------------------------------------------------------
 
 
 @cli.command()
@@ -224,6 +316,8 @@ def install_stubs(stubs_dir: Path, force: bool) -> None:
 )
 def report(results_dir: Path) -> None:
     """Print a summary of the most recent benchmark result."""
+    from bestie_bench.reporters import load_result, print_benchmark_result
+
     results_dir = Path(results_dir)
     if not results_dir.exists():
         console.print("[red]Results directory not found[/red]")
@@ -235,9 +329,14 @@ def report(results_dir: Path) -> None:
         sys.exit(1)
 
     latest = result_files[-1]
-    result = load_result(latest)
+    result_obj = load_result(latest)
     console.print(f"\n[dim]Loaded from {latest.name}[/dim]\n")
-    print_benchmark_result(result)
+    print_benchmark_result(result_obj)
+
+
+# ---------------------------------------------------------------------------
+# compare command
+# ---------------------------------------------------------------------------
 
 
 @cli.command()
@@ -247,14 +346,11 @@ def report(results_dir: Path) -> None:
     default="results",
     help="Directory containing result JSON files",
 )
-@click.option(
-    "--limit",
-    default=10,
-    type=int,
-    help="Maximum number of results to compare",
-)
+@click.option("--limit", default=10, type=int, help="Maximum number of results to compare")
 def compare(results_dir: Path, limit: int) -> None:
     """Compare multiple benchmark results."""
+    from bestie_bench.reporters import iter_results, compare_results
+
     results_dir = Path(results_dir)
     if not results_dir.exists():
         console.print("[red]Results directory not found[/red]")
@@ -269,6 +365,11 @@ def compare(results_dir: Path, limit: int) -> None:
         sys.exit(1)
 
     compare_results(results)
+
+
+# ---------------------------------------------------------------------------
+# prompts command
+# ---------------------------------------------------------------------------
 
 
 @cli.command()

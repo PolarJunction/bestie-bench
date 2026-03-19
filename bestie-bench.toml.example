@@ -1,0 +1,15 @@
+# bestie-bench configuration template
+# Copy to bestie-bench.toml and fill in your values
+# bestie-bench.toml is gitignored — never commit API keys
+
+[default]
+provider = "minimax"                 # openai | anthropic | minimax
+model = "MiniMax-M2.7-highspeed"   # model to benchmark
+api_key = "sk-cp-..."               # API key (or set BESTIE_BENCH_API_KEY env var)
+judge_model = "gpt-4o"             # model for LLM-judge scoring (advice/empathy)
+temperature = 0.7
+runs_per_case = 3
+stubs_dir = "stubs"
+fixtures_dir = "fixtures"
+results_dir = "results"
+system_prompt = "bestie-v1"
