@@ -1,0 +1,25 @@
+# Tool Calling — Weather
+
+cases:
+  - id: tc_weather_001
+    description: Get weather for a city
+    user_input: "What's the weather like in Edinburgh today?"
+    expected_tools:
+      - name: get_weather
+        arguments:
+          location: "Edinburgh"
+    metadata:
+      tags: [weather]
+      difficulty: easy
+
+  - id: tc_weather_002
+    description: Get weather with specific units
+    user_input: "Is it cold in New York right now? Give me it in Fahrenheit."
+    expected_tools:
+      - name: get_weather
+        arguments:
+          location: "New York"
+          units: "imperial"
+    metadata:
+      tags: [weather]
+      difficulty: medium

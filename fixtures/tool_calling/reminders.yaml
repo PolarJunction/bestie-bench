@@ -1,0 +1,42 @@
+# Tool Calling — Reminders
+
+cases:
+  - id: tc_reminder_001
+    description: Schedule a simple reminder for a specific time and day
+    user_input: "Remind me to call mum at 9am on Tuesday"
+    expected_tools:
+      - name: schedule_reminder
+        arguments:
+          time: "09:00"
+          day: "tuesday"
+          message: "Call mum"
+    metadata:
+      tags: [reminder, scheduling]
+      difficulty: easy
+
+  - id: tc_reminder_002
+    description: Schedule a daily recurring reminder
+    user_input: "I need a daily reminder at 7am to take my medication"
+    expected_tools:
+      - name: schedule_reminder
+        arguments:
+          time: "07:00"
+          day: "daily"
+          message: "Take your medication"
+          repeat: "daily"
+    metadata:
+      tags: [reminder, scheduling, daily]
+      difficulty: easy
+
+  - id: tc_reminder_003
+    description: Schedule a reminder for today with short notice
+    user_input: "Quick reminder - meeting with the team in 30 minutes"
+    expected_tools:
+      - name: schedule_reminder
+        arguments:
+          time: "30 minutes"
+          day: "today"
+          message: "Meeting with the team"
+    metadata:
+      tags: [reminder, scheduling]
+      difficulty: medium

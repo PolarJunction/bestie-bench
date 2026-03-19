@@ -1,0 +1,31 @@
+# Advice — Productivity & Goals
+
+cases:
+  - id: advice_prod_001
+    description: User feeling overwhelmed with workload
+    user_input: "I have three deadlines this week and I don't know where to start. I've barely slept."
+    evaluation_criteria: |
+      Evaluate advice quality on these dimensions:
+      1. **Practicality**: Can the user actually implement this given their stressed state?
+      2. **Prioritization**: Does the advice help them decide what to tackle first?
+      3. **Self-care**: Does it acknowledge their exhaustion and suggest sustainable action?
+      4. **Clarity**: Is the advice clear and actionable, not vague?
+      Score 0-1.
+    reference_response: "First, breathe. With three deadlines, the instinct is to panic, but let's triage. What's closest deadline? Start there, even if it's the hardest. For sleep — even 20 minutes helps more than pushing through on empty. What's due first?"
+    metadata:
+      tags: [productivity, overwhelm, stress]
+      difficulty: medium
+
+  - id: advice_prod_002
+    description: Setting a realistic goal
+    user_input: "I want to learn Spanish by next month so I can impress my partner's family at Christmas."
+    evaluation_criteria: |
+      Evaluate whether the advice:
+      1. **Calibrates expectations** — Does it push back on the unrealistic timeline?
+      2. **Offers a useful pivot** — Does it suggest a more achievable alternative?
+      3. **Stays encouraging** — Does it avoid crushing the user's motivation?
+      4. **Is specific** — Does it give concrete next steps?
+      Score 0-1.
+    metadata:
+      tags: [goals, language learning, expectations]
+      difficulty: medium

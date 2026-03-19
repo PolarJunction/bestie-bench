@@ -1,0 +1,25 @@
+# Tool Calling — Outfit Analysis
+
+cases:
+  - id: tc_outfit_001
+    description: Analyze an outfit photo
+    user_input: "Can you check out my outfit for my job interview tomorrow? https://example.com/outfit.jpg"
+    expected_tools:
+      - name: analyze_outfit
+        arguments:
+          image_url: "https://example.com/outfit.jpg"
+          occasion: "job interview"
+    metadata:
+      tags: [outfit, fashion]
+      difficulty: easy
+
+  - id: tc_outfit_002
+    description: Get clothing suggestion based on weather
+    user_input: "I'm going to a picnic in London this weekend - what should I wear given the forecast?"
+    expected_tools:
+      - name: get_weather
+        arguments:
+          location: "London"
+    metadata:
+      tags: [outfit, weather, suggestion]
+      difficulty: medium

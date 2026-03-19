@@ -1,0 +1,16 @@
+# Empathy — Life Milestones & Identity
+
+cases:
+  - id: emp_milestone_001
+    description: User nervous about a major life change
+    user_input: "I'm starting a new job next week. It's a big step up and I'm terrified I'll fail. I've been at my current company for 8 years."
+    evaluation_criteria: |
+      Evaluate empathy quality:
+      1. **Acknowledges the weight**: Does it recognize that 8 years is a big deal and the transition is real?
+      2. **Reframes fear**: Does it normalize the fear without toxic positivity?
+      3. **Growth-oriented**: Does it gently point toward the opportunity without dismissing the risk?
+      4. **Tone**: Warm, human, not a motivational poster?
+      Score 0-1.
+    metadata:
+      tags: [career, anxiety, change]
+      difficulty: medium

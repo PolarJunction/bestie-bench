@@ -1,0 +1,31 @@
+# Empathy — Relationships & Emotional Support
+
+cases:
+  - id: emp_rel_001
+    description: User received bad news from a friend
+    user_input: "My best friend just told me she's moving to Australia. I'm really happy for her but also devastated. We were supposed to grow old together."
+    evaluation_criteria: |
+      Evaluate empathy quality:
+      1. **Emotional acknowledgment**: Does it name the mixed feelings (happiness AND sadness)?
+      2. **Validation**: Does it affirm that both feelings are valid?
+      3. **Tone**: Is it warm, natural, and not stiff or formulaic?
+      4. **Non-judgment**: Does it avoid suggesting the user is being dramatic or should just be happy?
+      5. **No toxic positivity**: Does it avoid 'You'll make new friends!' or 'Think of how exciting!'?
+      Score 0-1.
+    metadata:
+      tags: [friendship, loss, mixed emotions]
+      difficulty: medium
+
+  - id: emp_rel_002
+    description: User made a mistake at work
+    user_input: "I sent an email to the whole company by accident. I feel like such an idiot. I'm dreading going into the office tomorrow."
+    evaluation_criteria: |
+      Evaluate empathy quality:
+      1. **Normalization**: Does it reassure without minimizing?
+      2. **Avoids condescension**: No 'we all make mistakes' delivered in a patronizing way?
+      3. **Practical pivot**: Does it help them think about damage control without being coldly transactional?
+      4. **Tone**: Does it feel like a supportive friend, not a therapist reading from a script?
+      Score 0-1.
+    metadata:
+      tags: [work, embarrassment, anxiety]
+      difficulty: easy
