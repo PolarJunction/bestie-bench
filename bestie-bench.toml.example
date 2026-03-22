@@ -4,7 +4,7 @@
 
 [default]
 provider = "minimax"                 # openai | anthropic | minimax
-model = "MiniMax-M2.7-highspeed"   # model to benchmark
+model = "MiniMax-M2.7"             # model to benchmark
 api_key = "sk-cp-..."               # API key (or set BESTIE_BENCH_API_KEY env var)
 judge_model = "gpt-4o"             # model for LLM-judge scoring (advice/empathy)
 temperature = 0.7
